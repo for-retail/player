@@ -3,58 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GAA Player v1.3 - Mobile Pro</title>
+    <title>GAA Player v1.4 - Full Screen Overlay</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; min-height: 100vh; }
         
-        #container {
-            position: relative;
+        #video-section {
             width: 100vw;
             height: 56.25vw; /* 16:9 Aspect Ratio */
             background: #000;
-            overflow: hidden;
             border-bottom: 2px solid #00ffcc;
         }
 
         video { width: 100%; height: 100%; }
 
-        /* Mobile Friendly Overlay Wrapper */
+        /* MOTHAM PAGE ANTHA OVERLAY AVVALI KABATTI IDI BODY KI ATTACH AVTHUNDI */
         .overlay-img-wrapper {
-            position: absolute;
+            position: fixed; /* Absolute ki badulu fixed vadithe screen ekkadikaina vellochu */
             top: 20px; left: 20px;
-            padding: 5px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            touch-action: none; /* Mobile dragging ki idi important */
-            z-index: 100;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            border-radius: 10px;
+            touch-action: none;
+            z-index: 9999; /* Deeni valla buttons paina kuda images vasthayi */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .overlay-img-wrapper img { width: 100px; height: auto; display: block; border-radius: 5px; }
+        .overlay-img-wrapper img { width: 120px; height: auto; border-radius: 5px; pointer-events: none; }
 
-        /* Mobile UI Buttons */
         .close-btn {
-            position: absolute; top: -10px; right: -10px;
-            background: #ff4444; border: none; color: white;
-            border-radius: 50%; width: 24px; height: 24px; font-weight: bold;
+            position: absolute; top: -12px; right: -12px;
+            background: #ff4444; border: 2px solid #fff; color: white;
+            border-radius: 50%; width: 28px; height: 28px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
-        /* Resize Slider for each image */
-        .resize-slider {
-            width: 100%; margin-top: 5px; height: 20px;
-        }
+        .resize-slider { width: 100%; margin-top: 8px; accent-color: #00ffcc; }
 
-        .panel { padding: 15px; display: grid; gap: 10px; background: #111; }
-        .btn { background: #00ffcc; border: none; padding: 12px; border-radius: 5px; font-weight: bold; color: #000; width: 100%; }
-        input[type="range"] { width: 100%; height: 30px; }
-        label { font-size: 14px; color: #00ffcc; }
+        .panel { padding: 20px; display: grid; gap: 15px; background: #111; position: relative; z-index: 10; }
+        .btn { background: #00ffcc; border: none; padding: 15px; border-radius: 8px; font-weight: bold; color: #000; width: 100%; font-size: 1rem; }
+        input[type="range"] { width: 100%; height: 40px; }
+        label { font-size: 14px; color: #00ffcc; font-weight: bold; margin-bottom: 5px; display: block; }
     </style>
 </head>
 <body>
 
-    <div id="container">
+    <div id="video-section">
         <video id="mainVideo" playsinline controls></video>
-        <div id="overlayArea"></div>
     </div>
+
+    <div id="full-page-overlay"></div>
 
     <div class="panel">
         <div>
@@ -70,12 +71,12 @@
         <input type="file" id="videoInput" accept="video/*" multiple style="display:none">
         <input type="file" id="imageInput" accept="image/*" multiple style="display:none">
         
-        <button class="btn" id="nextBtn" style="background: #ffcc00;">Next Video ⏭️</button>
+        <button class="btn" id="nextBtn" style="background: #ffcc00; border: 2px solid #000;">Next Video ⏭️</button>
     </div>
 
     <script>
         const video = document.getElementById('mainVideo');
-        const overlayArea = document.getElementById('overlayArea');
+        const overlayArea = document.getElementById('full-page-overlay');
         let videoFiles = [];
         let currentIdx = 0;
 
@@ -93,16 +94,18 @@
         }
 
         document.getElementById('nextBtn').onclick = () => {
-            currentIdx = (currentIdx + 1) % videoFiles.length;
-            playVideo(currentIdx);
+            if(videoFiles.length > 0) {
+                currentIdx = (currentIdx + 1) % videoFiles.length;
+                playVideo(currentIdx);
+            }
         };
 
-        // Brightness Boost
+        // Brightness Filter
         document.getElementById('brightRange').oninput = (e) => {
             video.style.filter = `brightness(${e.target.value})`;
         };
 
-        // Image Overlays with Slider-based Resize (Mobile Friendly)
+        // Image Overlays (Now Fixed to Full Page)
         document.getElementById('imageInput').onchange = (e) => {
             const files = Array.from(e.target.files);
             files.forEach(file => {
@@ -113,15 +116,14 @@
                 img.src = URL.createObjectURL(file);
                 
                 const closeBtn = document.createElement('button');
-                closeBtn.innerHTML = "X";
+                closeBtn.innerHTML = "&times;";
                 closeBtn.className = "close-btn";
                 closeBtn.onclick = () => wrapper.remove();
 
-                // Mobile Slider for Resizing
                 const resizer = document.createElement('input');
                 resizer.type = "range";
                 resizer.className = "resize-slider";
-                resizer.min = "50"; resizer.max = "400"; resizer.value = "100";
+                resizer.min = "50"; resizer.max = "500"; resizer.value = "120";
                 resizer.oninput = (r) => { img.style.width = r.target.value + "px"; };
 
                 wrapper.appendChild(closeBtn);
@@ -133,36 +135,25 @@
             });
         };
 
-        // Mobile Friendly Drag Logic
+        // Mobile Drag Logic (Fixed positioning compatible)
         function setupTouchDrag(el) {
-            let active = false;
-            let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
+            let xOffset = 0, yOffset = 0;
 
-            el.addEventListener("touchstart", dragStart, false);
-            document.addEventListener("touchend", dragEnd, false);
-            document.addEventListener("touchmove", drag, false);
-
-            function dragStart(e) {
+            el.addEventListener("touchstart", (e) => {
                 if (e.target.type === "range" || e.target.className === "close-btn") return;
-                initialX = e.touches[0].clientX - xOffset;
-                initialY = e.touches[0].clientY - yOffset;
-                active = true;
-            }
+                const touch = e.touches[0];
+                const rect = el.getBoundingClientRect();
+                xOffset = touch.clientX - rect.left;
+                yOffset = touch.clientY - rect.top;
+            }, {passive: false});
 
-            function dragEnd() {
-                initialX = currentX; initialY = currentY;
-                active = false;
-            }
-
-            function drag(e) {
-                if (active) {
-                    e.preventDefault();
-                    currentX = e.touches[0].clientX - initialX;
-                    currentY = e.touches[0].clientY - initialY;
-                    xOffset = currentX; yOffset = currentY;
-                    el.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
-                }
-            }
+            el.addEventListener("touchmove", (e) => {
+                if (e.target.type === "range" || e.target.className === "close-btn") return;
+                e.preventDefault();
+                const touch = e.touches[0];
+                el.style.left = (touch.clientX - xOffset) + "px";
+                el.style.top = (touch.clientY - yOffset) + "px";
+            }, {passive: false});
         }
     </script>
 </body>
