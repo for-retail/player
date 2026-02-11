@@ -2,209 +2,167 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GAA Advanced Player v1.2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GAA Player v1.3 - Mobile Pro</title>
     <style>
-        body { background: #0f0f0f; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
         
         #container {
             position: relative;
-            width: 90%;
-            max-width: 1000px;
-            margin: 20px auto;
+            width: 100vw;
+            height: 56.25vw; /* 16:9 Aspect Ratio */
             background: #000;
-            border: 2px solid #00ffcc;
-            box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
-            min-height: 450px;
+            overflow: hidden;
+            border-bottom: 2px solid #00ffcc;
         }
 
-        video { width: 100%; display: block; transition: 0.1s; }
+        video { width: 100%; height: 100%; }
 
-        /* Image Overlay Styling */
+        /* Mobile Friendly Overlay Wrapper */
         .overlay-img-wrapper {
             position: absolute;
-            top: 50px; left: 50px;
-            border: 1px solid #fff;
-            background: rgba(0,0,0,0.5);
-            resize: both;
-            overflow: hidden;
-            min-width: 60px; min-height: 60px;
-            cursor: move;
+            top: 20px; left: 20px;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            touch-action: none; /* Mobile dragging ki idi important */
             z-index: 100;
         }
 
-        .overlay-img-wrapper img { width: 100%; height: 100%; pointer-events: none; }
+        .overlay-img-wrapper img { width: 100px; height: auto; display: block; border-radius: 5px; }
 
-        /* Close Button for Images */
+        /* Mobile UI Buttons */
         .close-btn {
-            position: absolute;
-            top: 0; right: 0;
-            background: red;
-            color: white;
-            border: none;
-            font-size: 12px;
-            cursor: pointer;
-            padding: 2px 6px;
-            z-index: 101;
+            position: absolute; top: -10px; right: -10px;
+            background: #ff4444; border: none; color: white;
+            border-radius: 50%; width: 24px; height: 24px; font-weight: bold;
         }
 
-        /* Controls */
-        .panel {
-            background: #1a1a1a;
-            padding: 20px;
-            width: 90%;
-            max-width: 1000px;
-            margin: 0 auto 50px;
-            border-radius: 10px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+        /* Resize Slider for each image */
+        .resize-slider {
+            width: 100%; margin-top: 5px; height: 20px;
         }
 
-        .control-box { border: 1px solid #333; padding: 15px; border-radius: 8px; background: #222; }
-        
-        button { 
-            background: #00ffcc; border: none; padding: 10px 15px; 
-            cursor: pointer; font-weight: bold; border-radius: 5px; color: #000;
-        }
-
-        button:active { transform: scale(0.95); }
-        
-        .video-info { margin-top: 10px; font-size: 0.8rem; color: #aaa; }
+        .panel { padding: 15px; display: grid; gap: 10px; background: #111; }
+        .btn { background: #00ffcc; border: none; padding: 12px; border-radius: 5px; font-weight: bold; color: #000; width: 100%; }
+        input[type="range"] { width: 100%; height: 30px; }
+        label { font-size: 14px; color: #00ffcc; }
     </style>
 </head>
 <body>
 
-    <h2 style="color: #00ffcc; text-align: center;">GAA PLAYER v1.2</h2>
-
     <div id="container">
-        <video id="mainVideo" controls></video>
+        <video id="mainVideo" playsinline controls></video>
         <div id="overlayArea"></div>
     </div>
 
     <div class="panel">
-        <div class="control-box">
-            <label>1. Select Playlist (Videos):</label><br><br>
-            <input type="file" id="videoInput" accept="video/*" multiple><br>
-            <div class="video-info" id="vStatus">No videos loaded</div>
-            <button id="nextBtn" style="margin-top:10px; background: #ffcc00;">Next Video ⏭️</button>
+        <div>
+            <label>Brightness Boost (Night Vision Mode)</label>
+            <input type="range" id="brightRange" min="1" max="5" step="0.1" value="1">
         </div>
 
-        <div class="control-box">
-            <label>2. Brightness Boost:</label><br><br>
-            <input type="range" id="brightRange" min="1" max="5" step="0.1" value="1" style="width: 100%;">
+        <div style="display: flex; gap: 10px;">
+            <button class="btn" onclick="document.getElementById('videoInput').click()">Select Videos</button>
+            <button class="btn" onclick="document.getElementById('imageInput').click()">Add Overlays</button>
         </div>
-
-        <div class="control-box">
-            <label>3. Overlays:</label><br><br>
-            <button onclick="document.getElementById('imageInput').click()">Pick Multiple Images</button>
-            <input type="file" id="imageInput" accept="image/*" multiple style="display:none">
-        </div>
-
-        <div class="control-box">
-            <label>4. System:</label><br><br>
-            <button style="background: #ff4444; color: white;" onclick="alert('Recycle Bin has ' + trashList.length + ' items')">View Trash</button>
-        </div>
+        
+        <input type="file" id="videoInput" accept="video/*" multiple style="display:none">
+        <input type="file" id="imageInput" accept="image/*" multiple style="display:none">
+        
+        <button class="btn" id="nextBtn" style="background: #ffcc00;">Next Video ⏭️</button>
     </div>
 
     <script>
         const video = document.getElementById('mainVideo');
         const overlayArea = document.getElementById('overlayArea');
-        const vStatus = document.getElementById('vStatus');
-        const nextBtn = document.getElementById('nextBtn');
-        
         let videoFiles = [];
-        let currentVideoIndex = 0;
-        let trashList = [];
+        let currentIdx = 0;
 
-        // --- 1. VIDEO PLAYLIST LOGIC ---
-        document.getElementById('videoInput').onchange = function(e) {
+        // Video Playlist Logic
+        document.getElementById('videoInput').onchange = (e) => {
             videoFiles = Array.from(e.target.files);
-            if(videoFiles.length > 0) {
-                currentVideoIndex = 0;
-                playVideo(currentVideoIndex);
-            }
+            if(videoFiles.length > 0) { currentIdx = 0; playVideo(0); }
         };
 
-        function playVideo(index) {
-            if(index < videoFiles.length) {
-                const url = URL.createObjectURL(videoFiles[index]);
-                video.src = url;
+        function playVideo(idx) {
+            if(idx < videoFiles.length) {
+                video.src = URL.createObjectURL(videoFiles[idx]);
                 video.play();
-                vStatus.innerText = `Playing: ${videoFiles[index].name} (${index + 1}/${videoFiles.length})`;
-            } else {
-                alert("Playlist finished!");
             }
         }
 
-        // Auto play next video when current one ends
-        video.onended = () => {
-            currentVideoIndex++;
-            playVideo(currentVideoIndex);
+        document.getElementById('nextBtn').onclick = () => {
+            currentIdx = (currentIdx + 1) % videoFiles.length;
+            playVideo(currentIdx);
         };
 
-        // Manual Next Button
-        nextBtn.onclick = () => {
-            currentVideoIndex++;
-            if(currentVideoIndex >= videoFiles.length) currentVideoIndex = 0; // Loop back
-            playVideo(currentVideoIndex);
+        // Brightness Boost
+        document.getElementById('brightRange').oninput = (e) => {
+            video.style.filter = `brightness(${e.target.value})`;
         };
 
-        // --- 2. BRIGHTNESS ---
-        document.getElementById('brightRange').oninput = function() {
-            video.style.filter = `brightness(${this.value})`;
-        };
-
-        // --- 3. IMAGE OVERLAY WITH CLOSE & RESIZE ---
-        document.getElementById('imageInput').onchange = function(e) {
+        // Image Overlays with Slider-based Resize (Mobile Friendly)
+        document.getElementById('imageInput').onchange = (e) => {
             const files = Array.from(e.target.files);
             files.forEach(file => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'overlay-img-wrapper';
-                wrapper.style.width = "150px"; 
-                wrapper.style.height = "100px";
-
-                // Close Button
-                const closeBtn = document.createElement('button');
-                closeBtn.innerHTML = "X";
-                closeBtn.className = "close-btn";
-                closeBtn.onclick = () => {
-                    trashList.push(file.name);
-                    wrapper.remove();
-                };
 
                 const img = document.createElement('img');
                 img.src = URL.createObjectURL(file);
+                
+                const closeBtn = document.createElement('button');
+                closeBtn.innerHTML = "X";
+                closeBtn.className = "close-btn";
+                closeBtn.onclick = () => wrapper.remove();
+
+                // Mobile Slider for Resizing
+                const resizer = document.createElement('input');
+                resizer.type = "range";
+                resizer.className = "resize-slider";
+                resizer.min = "50"; resizer.max = "400"; resizer.value = "100";
+                resizer.oninput = (r) => { img.style.width = r.target.value + "px"; };
 
                 wrapper.appendChild(closeBtn);
                 wrapper.appendChild(img);
+                wrapper.appendChild(resizer);
                 overlayArea.appendChild(wrapper);
 
-                makeDraggable(wrapper);
+                setupTouchDrag(wrapper);
             });
         };
 
-        // Drag Functionality
-        function makeDraggable(el) {
-            let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
-            el.onmousedown = (e) => {
-                if(e.target.className === 'close-btn') return; // Don't drag if close is clicked
-                // Prevent drag if clicking resize handle (bottom-right 20px)
-                if (e.offsetX > el.clientWidth - 20 && e.offsetY > el.clientHeight - 20) return;
-                
-                e.preventDefault();
-                p3 = e.clientX;
-                p4 = e.clientY;
-                document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
-                document.onmousemove = (e) => {
-                    p1 = p3 - e.clientX;
-                    p2 = p4 - e.clientY;
-                    p3 = e.clientX;
-                    p4 = e.clientY;
-                    el.style.top = (el.offsetTop - p2) + "px";
-                    el.style.left = (el.offsetLeft - p1) + "px";
-                };
-            };
+        // Mobile Friendly Drag Logic
+        function setupTouchDrag(el) {
+            let active = false;
+            let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
+
+            el.addEventListener("touchstart", dragStart, false);
+            document.addEventListener("touchend", dragEnd, false);
+            document.addEventListener("touchmove", drag, false);
+
+            function dragStart(e) {
+                if (e.target.type === "range" || e.target.className === "close-btn") return;
+                initialX = e.touches[0].clientX - xOffset;
+                initialY = e.touches[0].clientY - yOffset;
+                active = true;
+            }
+
+            function dragEnd() {
+                initialX = currentX; initialY = currentY;
+                active = false;
+            }
+
+            function drag(e) {
+                if (active) {
+                    e.preventDefault();
+                    currentX = e.touches[0].clientX - initialX;
+                    currentY = e.touches[0].clientY - initialY;
+                    xOffset = currentX; yOffset = currentY;
+                    el.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+                }
+            }
         }
     </script>
 </body>
