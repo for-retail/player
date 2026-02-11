@@ -3,50 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GAA Player v1.4 - Full Screen Overlay</title>
+    <title>GAA Offline Player Pro</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; min-height: 100vh; }
+        :root { --main-color: #00ffcc; --bg-dark: #0a0a0a; }
+        body { background: var(--bg-dark); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
         
+        /* Video Container */
         #video-section {
             width: 100vw;
-            height: 56.25vw; /* 16:9 Aspect Ratio */
+            height: 56.25vw; 
             background: #000;
-            border-bottom: 2px solid #00ffcc;
+            position: sticky; top: 0;
+            z-index: 5;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+        }
+        video { width: 100%; height: 100%; object-fit: contain; }
+
+        /* Full Screen Overlay Layer */
+        #full-page-overlay {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
         }
 
-        video { width: 100%; height: 100%; }
-
-        /* MOTHAM PAGE ANTHA OVERLAY AVVALI KABATTI IDI BODY KI ATTACH AVTHUNDI */
         .overlay-img-wrapper {
-            position: fixed; /* Absolute ki badulu fixed vadithe screen ekkadikaina vellochu */
-            top: 20px; left: 20px;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(0, 255, 204, 0.3);
-            border-radius: 10px;
+            position: fixed;
+            top: 100px; left: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--main-color);
+            border-radius: 12px;
             touch-action: none;
-            z-index: 9999; /* Deeni valla buttons paina kuda images vasthayi */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            z-index: 1000;
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        .overlay-img-wrapper img { width: 120px; height: auto; border-radius: 5px; pointer-events: none; }
+        .overlay-img-wrapper img { width: 130px; border-radius: 8px; pointer-events: none; }
 
         .close-btn {
-            position: absolute; top: -12px; right: -12px;
-            background: #ff4444; border: 2px solid #fff; color: white;
-            border-radius: 50%; width: 28px; height: 28px; font-weight: bold;
+            position: absolute; top: -15px; right: -15px;
+            background: #ff3333; color: white; border: 2px solid #fff;
+            border-radius: 50%; width: 30px; height: 30px;
+            font-weight: bold; font-size: 18px;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
-        .resize-slider { width: 100%; margin-top: 8px; accent-color: #00ffcc; }
+        .resize-slider { width: 100%; margin-top: 10px; accent-color: var(--main-color); }
 
-        .panel { padding: 20px; display: grid; gap: 15px; background: #111; position: relative; z-index: 10; }
-        .btn { background: #00ffcc; border: none; padding: 15px; border-radius: 8px; font-weight: bold; color: #000; width: 100%; font-size: 1rem; }
-        input[type="range"] { width: 100%; height: 40px; }
-        label { font-size: 14px; color: #00ffcc; font-weight: bold; margin-bottom: 5px; display: block; }
+        /* Controls Panel */
+        .panel { padding: 20px; background: #151515; position: relative; z-index: 10; border-top-left-radius: 20px; border-top-right-radius: 20px; margin-top: -10px; }
+        .control-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: var(--main-color); font-weight: bold; }
+        
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn { 
+            background: var(--main-color); border: none; padding: 16px; 
+            border-radius: 10px; font-weight: bold; color: #000; 
+            font-size: 14px; text-transform: uppercase;
+        }
+        
+        .next-btn { 
+            background: #ffcc00; width: 100%; margin-top: 10px; 
+            padding: 18px; border-radius: 10px; border: none; font-weight: bold;
+        }
+
+        input[type="range"] { width: 100%; height: 15px; }
+
+        /* Status Bar */
+        #status-bar { padding: 10px; text-align: center; font-size: 12px; color: #888; }
     </style>
 </head>
 <body>
@@ -58,54 +86,78 @@
     <div id="full-page-overlay"></div>
 
     <div class="panel">
-        <div>
-            <label>Brightness Boost (Night Vision Mode)</label>
+        <div class="control-group">
+            <label>Brightness Level (Extra Boost)</label>
             <input type="range" id="brightRange" min="1" max="5" step="0.1" value="1">
         </div>
 
-        <div style="display: flex; gap: 10px;">
-            <button class="btn" onclick="document.getElementById('videoInput').click()">Select Videos</button>
-            <button class="btn" onclick="document.getElementById('imageInput').click()">Add Overlays</button>
+        <div class="btn-row">
+            <button class="btn" onclick="document.getElementById('videoInput').click()">📁 Videos</button>
+            <button class="btn" onclick="document.getElementById('imageInput').click()">🖼️ Overlays</button>
         </div>
         
         <input type="file" id="videoInput" accept="video/*" multiple style="display:none">
         <input type="file" id="imageInput" accept="image/*" multiple style="display:none">
         
-        <button class="btn" id="nextBtn" style="background: #ffcc00; border: 2px solid #000;">Next Video ⏭️</button>
+        <button class="next-btn" id="nextBtn">Play Next Video ⏭️</button>
+        
+        <div id="status-bar">No videos in playlist</div>
     </div>
 
     <script>
+        // Service Worker Simulation for Offline
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                console.log('App is ready for offline use.');
+            });
+        }
+
         const video = document.getElementById('mainVideo');
         const overlayArea = document.getElementById('full-page-overlay');
+        const statusBar = document.getElementById('status-bar');
+        
         let videoFiles = [];
         let currentIdx = 0;
 
-        // Video Playlist Logic
+        // Offline Video Loading logic
         document.getElementById('videoInput').onchange = (e) => {
             videoFiles = Array.from(e.target.files);
-            if(videoFiles.length > 0) { currentIdx = 0; playVideo(0); }
+            if(videoFiles.length > 0) {
+                currentIdx = 0;
+                playCurrentVideo();
+            }
         };
 
-        function playVideo(idx) {
-            if(idx < videoFiles.length) {
-                video.src = URL.createObjectURL(videoFiles[idx]);
+        function playCurrentVideo() {
+            if(videoFiles[currentIdx]) {
+                const url = URL.createObjectURL(videoFiles[currentIdx]);
+                video.src = url;
                 video.play();
+                statusBar.innerText = `Playlist: ${currentIdx + 1} / ${videoFiles.length}`;
             }
         }
 
         document.getElementById('nextBtn').onclick = () => {
             if(videoFiles.length > 0) {
                 currentIdx = (currentIdx + 1) % videoFiles.length;
-                playVideo(currentIdx);
+                playCurrentVideo();
             }
         };
 
-        // Brightness Filter
+        // Auto-next when video ends (purely offline)
+        video.onended = () => {
+            if(videoFiles.length > 1) {
+                currentIdx = (currentIdx + 1) % videoFiles.length;
+                playCurrentVideo();
+            }
+        };
+
+        // Brightness Boost logic
         document.getElementById('brightRange').oninput = (e) => {
             video.style.filter = `brightness(${e.target.value})`;
         };
 
-        // Image Overlays (Now Fixed to Full Page)
+        // Offline Image Overlays
         document.getElementById('imageInput').onchange = (e) => {
             const files = Array.from(e.target.files);
             files.forEach(file => {
@@ -116,14 +168,14 @@
                 img.src = URL.createObjectURL(file);
                 
                 const closeBtn = document.createElement('button');
-                closeBtn.innerHTML = "&times;";
+                closeBtn.innerHTML = "×";
                 closeBtn.className = "close-btn";
                 closeBtn.onclick = () => wrapper.remove();
 
                 const resizer = document.createElement('input');
                 resizer.type = "range";
                 resizer.className = "resize-slider";
-                resizer.min = "50"; resizer.max = "500"; resizer.value = "120";
+                resizer.min = "60"; resizer.max = "600"; resizer.value = "130";
                 resizer.oninput = (r) => { img.style.width = r.target.value + "px"; };
 
                 wrapper.appendChild(closeBtn);
@@ -135,7 +187,7 @@
             });
         };
 
-        // Mobile Drag Logic (Fixed positioning compatible)
+        // Smooth Touch Drag for Offline Mobile Use
         function setupTouchDrag(el) {
             let xOffset = 0, yOffset = 0;
 
