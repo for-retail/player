@@ -1,26 +1,33 @@
-const CACHE="ultra-player-v1";
+const CACHE_NAME = "god-player-v3";
 
-self.addEventListener("install",e=>{
-self.skipWaiting();
-e.waitUntil(
-caches.open(CACHE).then(cache=>{
-return cache.addAll(["./","./index.html"]);
-})
-);
+/* install */
+self.addEventListener("install", e => {
+  self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll([
+        "./",
+        "./index.html"
+      ]);
+    })
+  );
 });
 
-self.addEventListener("activate",e=>{
-e.waitUntil(
-caches.keys().then(keys=>{
-return Promise.all(
-keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))
-);
-})
-);
+/* activate */
+self.addEventListener("activate", e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.filter(k => k !== CACHE_NAME)
+            .map(k => caches.delete(k))
+      )
+    )
+  );
 });
 
-self.addEventListener("fetch",e=>{
-e.respondWith(
-caches.match(e.request).then(res=>res||fetch(e.request))
-);
+/* fetch */
+self.addEventListener("fetch", e => {
+  e.respondWith(
+    caches.match(e.request).then(res => res || fetch(e.request))
+  );
 });
