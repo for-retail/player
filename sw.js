@@ -1,4 +1,4 @@
-const CACHE="gaa-player-v1";
+const CACHE="gaa-player-v2";
 
 self.addEventListener("install",e=>{
 e.waitUntil(
