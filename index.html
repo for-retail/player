@@ -1,127 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GAA Player v1.7 - Offline Pro</title>
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
-        #v-box { width: 100vw; height: 56.25vw; background: #111; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #00ffcc; }
-        video { width: 100%; height: 100%; object-fit: contain; }
-        .ovl-img { 
-            position: fixed; top: 100px; left: 20px; padding: 8px; 
-            background: rgba(255,255,255,0.1); backdrop-filter: blur(5px);
-            border: 1px solid #00ffcc; border-radius: 12px; z-index: 1000; 
-            touch-action: none; display: flex; flex-direction: column; align-items: center;
-        }
-        .ovl-img img { width: 120px; height: auto; border-radius: 8px; pointer-events: none; }
-        .close-x { 
-            position: absolute; top: -12px; right: -12px; background: #ff4444; 
-            color: #fff; border: 2px solid #fff; border-radius: 50%; width: 28px; height: 28px; 
-            font-weight: bold; display: flex; align-items: center; justify-content: center;
-        }
-        .sz-sl { width: 100%; margin-top: 10px; accent-color: #00ffcc; }
-        .panel { padding: 20px; background: #151515; border-top-left-radius: 20px; border-top-right-radius: 20px; margin-top: -10px; position: relative; z-index: 15; }
-        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
-        .btn { background: #00ffcc; border: none; padding: 16px; border-radius: 12px; font-weight: bold; color: #000; font-size: 14px; }
-        .nx-btn { background: #ffcc00; width: 100%; padding: 18px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; }
-        input[type="range"] { width: 100%; height: 30px; margin: 10px 0; }
-        label { color: #00ffcc; font-weight: bold; font-size: 14px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>GAA Player</title>
+
+<link rel="manifest" href="manifest.json">
+
+<style>
+body{
+background:#000;color:#fff;font-family:sans-serif;margin:0;overflow:hidden;
+}
+#v-box{
+width:100vw;height:56.25vw;background:#111;position:relative;border-bottom:2px solid #00ffcc;
+}
+video{
+width:100%;height:100%;object-fit:contain;
+}
+.controls{
+padding:20px;background:#151515;border-radius:20px 20px 0 0;
+}
+.btn-row{
+display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0;
+}
+button{
+border:none;padding:15px;border-radius:10px;font-weight:bold;
+}
+.btn{background:#00ffcc;color:#000;}
+.next{background:#ffcc00;width:100%;}
+label{color:#00ffcc;font-weight:bold;}
+input[type=range]{width:100%;}
+.ovl{
+position:fixed;top:100px;left:20px;background:#ffffff10;
+border:1px solid #00ffcc;border-radius:12px;padding:10px;
+backdrop-filter:blur(5px);
+}
+.ovl img{width:130px;border-radius:8px;}
+.close{
+position:absolute;top:-15px;right:-15px;
+background:red;color:#fff;border-radius:50%;
+width:28px;height:28px;font-weight:bold;border:2px solid white;
+}
+</style>
 </head>
 <body>
 
-    <div id="v-box">
-        <video id="p" playsinline controls></video>
-    </div>
+<div id="v-box">
+<video id="player" controls playsinline></video>
+</div>
 
-    <div class="panel">
-        <label>Brightness Boost</label>
-        <input type="range" id="br" min="1" max="5" step="0.1" value="1">
-        
-        <div class="btn-row">
-            <button class="btn" onclick="document.getElementById('vi').click()">📁 LOAD VIDEOS</button>
-            <button class="btn" onclick="document.getElementById('ii').click()" style="background:#00d9ff">🖼️ ADD IMAGES</button>
-        </div>
-        
-        <input type="file" id="vi" accept="video/*" multiple style="display:none">
-        <input type="file" id="ii" accept="image/*" multiple style="display:none">
-        
-        <button class="nx-btn" id="nx">NEXT VIDEO ⏭️</button>
-    </div>
+<div class="controls">
+<label>Brightness</label>
+<input type="range" id="br" min="1" max="5" step="0.1" value="1">
 
-    <script>
-        const p = document.getElementById('p');
-        let vlist = [];
-        let cur = 0;
+<div class="btn-row">
+<button class="btn" onclick="videoInput.click()">📁 LOAD VIDEOS</button>
+<button class="btn" onclick="imgInput.click()">🖼 ADD IMAGE</button>
+</div>
 
-        // Video Playlist
-        document.getElementById('vi').onchange = (e) => {
-            vlist = Array.from(e.target.files);
-            if(vlist.length > 0) { cur = 0; playV(0); }
-        };
+<input type="file" id="videoInput" accept="video/*" multiple hidden>
+<input type="file" id="imgInput" accept="image/*" multiple hidden>
 
-        function playV(idx) {
-            if(p.src) URL.revokeObjectURL(p.src);
-            p.src = URL.createObjectURL(vlist[idx]);
-            p.play().catch(() => console.log("User interaction needed"));
-        }
+<button class="next" id="nextBtn">NEXT VIDEO ⏭</button>
+</div>
 
-        document.getElementById('nx').onclick = () => {
-            if(vlist.length > 0) { cur = (cur + 1) % vlist.length; playV(cur); }
-        };
+<script>
+const p = document.getElementById("player");
+const videoInput = document.getElementById("videoInput");
+const imgInput = document.getElementById("imgInput");
 
-        // Brightness Control
-        document.getElementById('br').oninput = (e) => {
-            p.style.filter = `brightness(${e.target.value})`;
-        };
+let list=[];
+let index=0;
 
-        // Image Overlay (Full Page Moveable)
-        document.getElementById('ii').onchange = (e) => {
-            Array.from(e.target.files).forEach(file => {
-                const w = document.createElement('div');
-                w.className = 'ovl-img';
-                const img = document.createElement('img');
-                img.src = URL.createObjectURL(file);
-                
-                const cb = document.createElement('button');
-                cb.innerHTML = "&times;"; cb.className = "close-x";
-                cb.onclick = () => w.remove();
+videoInput.onchange=e=>{
+list=[...e.target.files];
+if(list.length){
+index=0;
+play(index);
+}
+};
 
-                const sl = document.createElement('input');
-                sl.type = "range"; sl.className = "sz-sl";
-                sl.min = "50"; sl.max = "600"; sl.value = "120";
-                sl.oninput = (r) => { img.style.width = r.target.value + "px"; };
+function play(i){
+if(p.src) URL.revokeObjectURL(p.src);
+p.src=URL.createObjectURL(list[i]);
+p.play();
+}
 
-                w.append(cb, img, sl);
-                document.body.appendChild(w);
-                drag(w);
-            });
-        };
+nextBtn.onclick=()=>{
+if(list.length){
+index=(index+1)%list.length;
+play(index);
+}
+};
 
-        function drag(el) {
-            let x = 0, y = 0;
-            el.addEventListener("touchstart", (e) => {
-                if(e.target.type === 'range' || e.target.className === 'close-x') return;
-                const t = e.touches[0];
-                x = t.clientX - el.offsetLeft;
-                y = t.clientY - el.offsetTop;
-            });
-            el.addEventListener("touchmove", (e) => {
-                if(e.target.type === 'range' || e.target.className === 'close-x') return;
-                e.preventDefault();
-                const t = e.touches[0];
-                el.style.left = (t.clientX - x) + "px";
-                el.style.top = (t.clientY - y) + "px";
-            }, {passive: false});
-        }
+p.onended=()=>{
+if(list.length){
+index=(index+1)%list.length;
+play(index);
+}
+};
 
-        // Service Worker for Offline
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(() => {});
-        }
-    </script>
+br.oninput=e=>{
+p.style.filter=`brightness(${e.target.value})`;
+};
+
+imgInput.onchange=e=>{
+[...e.target.files].forEach(file=>{
+const box=document.createElement("div");
+box.className="ovl";
+
+const img=document.createElement("img");
+img.src=URL.createObjectURL(file);
+
+const close=document.createElement("button");
+close.innerHTML="×";
+close.className="close";
+close.onclick=()=>box.remove();
+
+box.append(img,close);
+document.body.appendChild(box);
+
+let x=0,y=0;
+box.onpointerdown=e=>{
+x=e.clientX-box.offsetLeft;
+y=e.clientY-box.offsetTop;
+document.onpointermove=m=>{
+box.style.left=(m.clientX-x)+"px";
+box.style.top=(m.clientY-y)+"px";
+};
+document.onpointerup=()=>document.onpointermove=null;
+};
+});
+};
+
+if("serviceWorker" in navigator){
+navigator.serviceWorker.register("sw.js");
+}
+</script>
 </body>
 </html>
