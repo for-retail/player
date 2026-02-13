@@ -1,40 +1,24 @@
-const CACHE_NAME = "godmode-player-v1";
+const cacheName = 'godmode-v1';
+const assets = [
+  './',
+  './index.html',
+  './manifest.json'
+];
 
-/* install */
-self.addEventListener("install", event => {
-  self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll([
-        "./",
-        "./index.html",
-        "./manifest.json"
-      ]);
+// Install Service Worker
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(cacheName).then(cache => {
+      cache.addAll(assets);
     })
   );
 });
 
-/* activate */
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
-  );
-  self.clients.claim();
-});
-
-/* fetch */
-self.addEventListener("fetch", event => {
-  event.respondWith(
-    caches.match(event.request).then(res => {
-      return res || fetch(event.request);
+// Fetch Offline
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(res => {
+      return res || fetch(e.request);
     })
   );
 });
