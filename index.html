@@ -3,22 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Player</title>
+<title>GAA Player</title>
+<link rel="manifest" href="manifest.json">
 
 <style>
 body{
 margin:0;
-background:#000;
-font-family:sans-serif;
+background:#0a0a0a;
 color:white;
+font-family:system-ui;
 }
 
-/* video */
-#v-box{
+/* video box */
+#playerBox{
 width:100%;
-height:55vw;
-background:#111;
+height:56vw;
+background:#000;
+box-shadow:0 0 30px #00ffcc44 inset;
 }
+
 video{
 width:100%;
 height:100%;
@@ -28,34 +31,38 @@ object-fit:contain;
 /* controls */
 .controls{
 padding:15px;
-background:#151515;
+background:#111;
+box-shadow:0 -3px 15px #000;
 }
+
 button{
 width:100%;
-padding:15px;
+padding:16px;
 border:none;
-border-radius:10px;
-background:#00ffcc;
+border-radius:12px;
+background:linear-gradient(45deg,#00ffcc,#00aaff);
+color:black;
 font-weight:bold;
+font-size:15px;
 }
 
 /* thumbnails */
 #thumbs{
 display:flex;
-gap:10px;
+gap:12px;
 overflow-x:auto;
-padding:10px;
-background:#000;
+padding:15px;
+background:#050505;
 }
 
 .thumb{
-min-width:130px;
-height:75px;
-border:2px solid #00ffcc;
-border-radius:8px;
+min-width:140px;
+height:80px;
+border-radius:12px;
 overflow:hidden;
 cursor:pointer;
-position:relative;
+border:2px solid transparent;
+transition:.2s;
 }
 
 .thumb video{
@@ -64,38 +71,52 @@ height:100%;
 object-fit:cover;
 }
 
+.thumb:hover{
+transform:scale(1.05);
+}
+
 .active{
-outline:3px solid yellow;
+border:2px solid #00ffcc;
+box-shadow:0 0 10px #00ffcc;
+}
+
+/* scrollbar */
+#thumbs::-webkit-scrollbar{
+height:6px;
+}
+#thumbs::-webkit-scrollbar-thumb{
+background:#00ffcc;
+border-radius:10px;
 }
 </style>
 </head>
 <body>
 
-<div id="v-box">
+<div id="playerBox">
 <video id="player" controls></video>
 </div>
 
 <div class="controls">
-<button onclick="fileInput.click()">SELECT VIDEOS</button>
-<input type="file" id="fileInput" accept="video/*" multiple hidden>
+<button onclick="picker.click()">SELECT VIDEOS</button>
+<input type="file" id="picker" accept="video/*" multiple hidden>
 </div>
 
 <div id="thumbs"></div>
 
 <script>
 const player=document.getElementById("player");
-const input=document.getElementById("fileInput");
+const picker=document.getElementById("picker");
 const thumbs=document.getElementById("thumbs");
 
-let list=[];
-let index=0;
+let files=[];
+let current=0;
 
-/* load videos */
-input.onchange=e=>{
-list=[...e.target.files];
+/* select videos */
+picker.onchange=e=>{
+files=[...e.target.files];
 thumbs.innerHTML="";
 
-list.forEach((file,i)=>{
+files.forEach((file,i)=>{
 const url=URL.createObjectURL(file);
 
 const div=document.createElement("div");
@@ -108,9 +129,8 @@ v.currentTime=1;
 
 div.appendChild(v);
 
-/* click play */
 div.onclick=()=>{
-index=i;
+current=i;
 playVideo();
 highlight();
 };
@@ -118,8 +138,8 @@ highlight();
 thumbs.appendChild(div);
 });
 
-if(list.length){
-index=0;
+if(files.length){
+current=0;
 playVideo();
 highlight();
 }
@@ -128,15 +148,29 @@ highlight();
 /* play */
 function playVideo(){
 if(player.src) URL.revokeObjectURL(player.src);
-player.src=URL.createObjectURL(list[index]);
+player.src=URL.createObjectURL(files[current]);
 player.play();
 }
 
-/* highlight */
+/* highlight active */
 function highlight(){
 document.querySelectorAll(".thumb").forEach(t=>t.classList.remove("active"));
-if(thumbs.children[index])
-thumbs.children[index].classList.add("active");
+if(thumbs.children[current])
+thumbs.children[current].classList.add("active");
+}
+
+/* auto next */
+player.onended=()=>{
+if(files.length){
+current=(current+1)%files.length;
+playVideo();
+highlight();
+}
+};
+
+/* service worker */
+if("serviceWorker" in navigator){
+navigator.serviceWorker.register("sw.js");
 }
 </script>
 
