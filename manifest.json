@@ -1,15 +1,8 @@
 {
 "name":"GAA Player",
 "short_name":"Player",
-"start_url":"./index.html",
+"start_url":"index.html",
 "display":"standalone",
 "background_color":"#000000",
-"theme_color":"#00ffcc",
-"icons":[
-{
-"src":"icon.png",
-"sizes":"192x192",
-"type":"image/png"
-}
-]
+"theme_color":"#00ffcc"
 }
