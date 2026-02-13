@@ -104,10 +104,13 @@ br.oninput=e=>{
 p.style.filter=`brightness(${e.target.value})`;
 };
 
-imgInput.onchange=e=>{
+imgInput.onchange = e=>{
 [...e.target.files].forEach(file=>{
+
 const box=document.createElement("div");
 box.className="ovl";
+box.style.left="100px";
+box.style.top="100px";
 
 const img=document.createElement("img");
 img.src=URL.createObjectURL(file);
@@ -117,21 +120,45 @@ close.innerHTML="×";
 close.className="close";
 close.onclick=()=>box.remove();
 
-box.append(img,close);
+/* resize slider */
+const slider=document.createElement("input");
+slider.type="range";
+slider.min=50;
+slider.max=800;
+slider.value=150;
+slider.style.width="100%";
+slider.oninput=r=>{
+img.style.width=r.target.value+"px";
+};
+
+/* add elements */
+box.append(img,close,slider);
 document.body.appendChild(box);
 
-let x=0,y=0;
-box.onpointerdown=e=>{
-x=e.clientX-box.offsetLeft;
-y=e.clientY-box.offsetTop;
-document.onpointermove=m=>{
-box.style.left=(m.clientX-x)+"px";
-box.style.top=(m.clientY-y)+"px";
-};
-document.onpointerup=()=>document.onpointermove=null;
-};
+/* DRAG SYSTEM */
+let offsetX,offsetY,isDown=false;
+
+box.addEventListener("pointerdown",e=>{
+if(e.target===slider || e.target===close) return;
+isDown=true;
+offsetX=e.clientX-box.offsetLeft;
+offsetY=e.clientY-box.offsetTop;
+box.setPointerCapture(e.pointerId);
+});
+
+box.addEventListener("pointermove",e=>{
+if(!isDown) return;
+box.style.left=(e.clientX-offsetX)+"px";
+box.style.top=(e.clientY-offsetY)+"px";
+});
+
+box.addEventListener("pointerup",()=>{
+isDown=false;
+});
+
 });
 };
+
 
 if("serviceWorker" in navigator){
 navigator.serviceWorker.register("sw.js");
