@@ -3,176 +3,182 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>GAA Player</title>
+<title>Ultra Player</title>
 <link rel="manifest" href="manifest.json">
 
 <style>
-body{
-margin:0;
-background:#0a0a0a;
-color:white;
-font-family:system-ui;
+body{margin:0;background:#000;font-family:system-ui;color:white;overflow:hidden;}
+#box{width:100%;height:56vw;background:black;position:relative;}
+video{width:100%;height:100%;object-fit:contain;}
+
+#info{
+position:absolute;top:10px;left:50%;
+transform:translateX(-50%);
+background:#000a;padding:6px 14px;border-radius:20px;
+font-size:14px;
 }
 
-/* video box */
-#playerBox{
-width:100%;
-height:56vw;
-background:#000;
-box-shadow:0 0 30px #00ffcc44 inset;
+#addImg{
+position:absolute;bottom:15px;right:15px;
+width:55px;height:55px;border-radius:50%;
+background:#00ffcc;color:black;font-size:32px;
+display:flex;align-items:center;justify-content:center;
+cursor:pointer;box-shadow:0 0 15px #00ffcc;
+z-index:10;
 }
 
-video{
-width:100%;
-height:100%;
-object-fit:contain;
-}
+#brightBox{padding:12px;background:#111;}
+#bright{width:100%;}
 
-/* controls */
-.controls{
-padding:15px;
-background:#111;
-box-shadow:0 -3px 15px #000;
-}
-
-button{
-width:100%;
-padding:16px;
-border:none;
-border-radius:12px;
-background:linear-gradient(45deg,#00ffcc,#00aaff);
-color:black;
-font-weight:bold;
-font-size:15px;
-}
-
-/* thumbnails */
 #thumbs{
-display:flex;
-gap:12px;
-overflow-x:auto;
-padding:15px;
-background:#050505;
+display:flex;gap:10px;overflow-x:auto;
+padding:10px;background:#050505;
 }
 
 .thumb{
-min-width:140px;
-height:80px;
-border-radius:12px;
-overflow:hidden;
-cursor:pointer;
-border:2px solid transparent;
-transition:.2s;
+min-width:140px;height:80px;border-radius:12px;
+overflow:hidden;border:2px solid transparent;cursor:pointer;
 }
+.thumb video{width:100%;height:100%;object-fit:cover;}
+.active{border:2px solid #00ffcc;box-shadow:0 0 10px #00ffcc;}
 
-.thumb video{
-width:100%;
-height:100%;
-object-fit:cover;
-}
+.ovl{position:absolute;width:160px;touch-action:none;}
+.ovl img{width:100%;display:block;pointer-events:none;border-radius:12px;}
 
-.thumb:hover{
-transform:scale(1.05);
-}
-
-.active{
-border:2px solid #00ffcc;
-box-shadow:0 0 10px #00ffcc;
-}
-
-/* scrollbar */
-#thumbs::-webkit-scrollbar{
-height:6px;
-}
-#thumbs::-webkit-scrollbar-thumb{
-background:#00ffcc;
-border-radius:10px;
+.resize{
+position:absolute;right:0;bottom:0;
+width:22px;height:22px;background:#00ffcc;
+cursor:nwse-resize;
 }
 </style>
 </head>
 <body>
 
-<div id="playerBox">
-<video id="player" controls></video>
+<div id="box">
+<video id="player"></video>
+<div id="info">Ready</div>
+<div id="addImg">+</div>
 </div>
 
-<div class="controls">
+<div id="brightBox">
+Brightness Boost
+<input type="range" id="bright" min="1" max="20" step="0.1" value="1">
+</div>
+
+<div style="padding:10px">
 <button onclick="picker.click()">SELECT VIDEOS</button>
 <input type="file" id="picker" accept="video/*" multiple hidden>
 </div>
 
 <div id="thumbs"></div>
+<input type="file" id="imgPick" accept="image/*" hidden>
 
 <script>
-const player=document.getElementById("player");
-const picker=document.getElementById("picker");
+const p=player;
 const thumbs=document.getElementById("thumbs");
-
+const info=document.getElementById("info");
 let files=[];
-let current=0;
+let i=0;
 
-/* select videos */
 picker.onchange=e=>{
 files=[...e.target.files];
 thumbs.innerHTML="";
-
-files.forEach((file,i)=>{
-const url=URL.createObjectURL(file);
-
-const div=document.createElement("div");
-div.className="thumb";
-
+files.forEach((f,index)=>{
+const url=URL.createObjectURL(f);
+const d=document.createElement("div");
+d.className="thumb";
 const v=document.createElement("video");
-v.src=url;
-v.muted=true;
-v.currentTime=1;
-
-div.appendChild(v);
-
-div.onclick=()=>{
-current=i;
-playVideo();
-highlight();
-};
-
-thumbs.appendChild(div);
+v.src=url;v.muted=true;v.currentTime=1;
+d.appendChild(v);
+d.onclick=()=>{ i=index; play(); };
+thumbs.appendChild(d);
 });
-
-if(files.length){
-current=0;
-playVideo();
-highlight();
-}
+if(files.length){ i=0; play(); }
 };
 
-/* play */
-function playVideo(){
-if(player.src) URL.revokeObjectURL(player.src);
-player.src=URL.createObjectURL(files[current]);
-player.play();
+function play(){
+if(p.src) URL.revokeObjectURL(p.src);
+p.src=URL.createObjectURL(files[i]);
+p.play();
+highlight();
 }
 
-/* highlight active */
 function highlight(){
 document.querySelectorAll(".thumb").forEach(t=>t.classList.remove("active"));
-if(thumbs.children[current])
-thumbs.children[current].classList.add("active");
+if(thumbs.children[i]) thumbs.children[i].classList.add("active");
 }
 
-/* auto next */
-player.onended=()=>{
-if(files.length){
-current=(current+1)%files.length;
-playVideo();
-highlight();
-}
+p.onended=()=>{ i=(i+1)%files.length; play(); };
+
+bright.oninput=e=>{
+let val=e.target.value;
+p.style.filter=`brightness(${val}) contrast(${1+val/10}) saturate(${1+val/20})`;
+show("Brightness "+Math.round(val*100));
 };
 
-/* service worker */
+document.onkeydown=e=>{
+if(e.code==="Space") p.paused?p.play():p.pause();
+if(e.code==="ArrowRight"){ p.currentTime+=10; show("⏩"); }
+if(e.code==="ArrowLeft"){ p.currentTime-=10; show("⏪"); }
+};
+
+addImg.onclick=()=>imgPick.click();
+
+imgPick.onchange=e=>{
+[...e.target.files].forEach(file=>{
+const wrap=document.createElement("div");
+wrap.className="ovl";
+wrap.style.left="120px";
+wrap.style.top="120px";
+
+const img=document.createElement("img");
+img.src=URL.createObjectURL(file);
+
+const r=document.createElement("div");
+r.className="resize";
+
+wrap.append(img,r);
+box.appendChild(wrap);
+
+let dx,dy,drag=false;
+wrap.onpointerdown=e=>{
+if(e.target===r) return;
+drag=true;
+dx=e.clientX-wrap.offsetLeft;
+dy=e.clientY-wrap.offsetTop;
+};
+window.onpointermove=e=>{
+if(!drag) return;
+wrap.style.left=e.clientX-dx+"px";
+wrap.style.top=e.clientY-dy+"px";
+};
+window.onpointerup=()=>drag=false;
+
+let resize=false,startX,startW;
+r.onpointerdown=e=>{
+resize=true;
+startX=e.clientX;
+startW=wrap.offsetWidth;
+e.stopPropagation();
+};
+window.addEventListener("pointermove",e=>{
+if(!resize) return;
+wrap.style.width=startW+(e.clientX-startX)+"px";
+});
+window.addEventListener("pointerup",()=>resize=false);
+});
+};
+
+function show(t){
+info.textContent=t;
+info.style.opacity=1;
+clearTimeout(info.t);
+info.t=setTimeout(()=>info.style.opacity=0,800);
+}
+
 if("serviceWorker" in navigator){
 navigator.serviceWorker.register("sw.js");
 }
 </script>
-
 </body>
 </html>
