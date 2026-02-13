@@ -1,4 +1,4 @@
-const CACHE="gaa-player-v2";
+const CACHE="ultra-player-v1";
 
 self.addEventListener("install",e=>{
 self.skipWaiting();
@@ -13,8 +13,7 @@ self.addEventListener("activate",e=>{
 e.waitUntil(
 caches.keys().then(keys=>{
 return Promise.all(
-keys.filter(k=>k!==CACHE)
-.map(k=>caches.delete(k))
+keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))
 );
 })
 );
