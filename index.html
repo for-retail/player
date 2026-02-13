@@ -4,42 +4,101 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>GAA Player</title>
-
 <link rel="manifest" href="manifest.json">
 
 <style>
 body{
-background:#000;color:#fff;font-family:sans-serif;margin:0;overflow:hidden;
+margin:0;
+background:#000;
+color:white;
+font-family:sans-serif;
+overflow:hidden;
 }
+
+/* video */
 #v-box{
-width:100vw;height:56.25vw;background:#111;position:relative;border-bottom:2px solid #00ffcc;
+width:100vw;
+height:56.25vw;
+background:#111;
+border-bottom:2px solid #00ffcc;
 }
 video{
-width:100%;height:100%;object-fit:contain;
+width:100%;
+height:100%;
+object-fit:contain;
 }
+
+/* controls */
 .controls{
-padding:20px;background:#151515;border-radius:20px 20px 0 0;
+padding:20px;
+background:#151515;
+border-radius:20px 20px 0 0;
 }
 .btn-row{
-display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0;
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin:15px 0;
 }
 button{
-border:none;padding:15px;border-radius:10px;font-weight:bold;
+padding:15px;
+border:none;
+border-radius:10px;
+font-weight:bold;
 }
-.btn{background:#00ffcc;color:#000;}
+.btn{background:#00ffcc;color:black;}
 .next{background:#ffcc00;width:100%;}
 label{color:#00ffcc;font-weight:bold;}
 input[type=range]{width:100%;}
+
+/* overlay */
 .ovl{
-position:fixed;top:100px;left:20px;background:#ffffff10;
-border:1px solid #00ffcc;border-radius:12px;padding:10px;
-backdrop-filter:blur(5px);
+position:fixed;
+left:120px;
+top:120px;
+width:180px;
+touch-action:none;
 }
-.ovl img{width:130px;border-radius:8px;}
+
+.box{
+position:relative;
+border:2px solid #00ffcc;
+border-radius:14px;
+overflow:hidden;
+background:#00000055;
+}
+
+.box img{
+width:100%;
+display:block;
+pointer-events:none;
+}
+
 .close{
-position:absolute;top:-15px;right:-15px;
-background:red;color:#fff;border-radius:50%;
-width:28px;height:28px;font-weight:bold;border:2px solid white;
+position:absolute;
+top:-12px;
+right:-12px;
+background:red;
+width:28px;
+height:28px;
+border-radius:50%;
+color:white;
+font-weight:bold;
+border:2px solid white;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
+}
+
+.resize{
+position:absolute;
+bottom:0;
+right:0;
+width:22px;
+height:22px;
+background:#00ffcc;
+cursor:nwse-resize;
 }
 </style>
 </head>
@@ -54,24 +113,25 @@ width:28px;height:28px;font-weight:bold;border:2px solid white;
 <input type="range" id="br" min="1" max="5" step="0.1" value="1">
 
 <div class="btn-row">
-<button class="btn" onclick="videoInput.click()">📁 LOAD VIDEOS</button>
-<button class="btn" onclick="imgInput.click()">🖼 ADD IMAGE</button>
+<button class="btn" onclick="videoInput.click()">LOAD VIDEOS</button>
+<button class="btn" onclick="imgInput.click()">ADD IMAGE</button>
 </div>
 
 <input type="file" id="videoInput" accept="video/*" multiple hidden>
 <input type="file" id="imgInput" accept="image/*" multiple hidden>
 
-<button class="next" id="nextBtn">NEXT VIDEO ⏭</button>
+<button class="next" id="nextBtn">NEXT VIDEO</button>
 </div>
 
 <script>
-const p = document.getElementById("player");
-const videoInput = document.getElementById("videoInput");
-const imgInput = document.getElementById("imgInput");
+const p=document.getElementById("player");
+const videoInput=document.getElementById("videoInput");
+const imgInput=document.getElementById("imgInput");
 
 let list=[];
 let index=0;
 
+/* video load */
 videoInput.onchange=e=>{
 list=[...e.target.files];
 if(list.length){
@@ -86,6 +146,7 @@ p.src=URL.createObjectURL(list[i]);
 p.play();
 }
 
+/* next */
 nextBtn.onclick=()=>{
 if(list.length){
 index=(index+1)%list.length;
@@ -93,6 +154,7 @@ play(index);
 }
 };
 
+/* auto next */
 p.onended=()=>{
 if(list.length){
 index=(index+1)%list.length;
@@ -100,69 +162,82 @@ play(index);
 }
 };
 
+/* brightness */
 br.oninput=e=>{
 p.style.filter=`brightness(${e.target.value})`;
 };
 
-imgInput.onchange = e=>{
+/* overlays */
+imgInput.onchange=e=>{
 [...e.target.files].forEach(file=>{
 
+const wrap=document.createElement("div");
+wrap.className="ovl";
+
 const box=document.createElement("div");
-box.className="ovl";
-box.style.left="100px";
-box.style.top="100px";
+box.className="box";
 
 const img=document.createElement("img");
 img.src=URL.createObjectURL(file);
 
-const close=document.createElement("button");
-close.innerHTML="×";
+const close=document.createElement("div");
 close.className="close";
-close.onclick=()=>box.remove();
+close.innerHTML="×";
+close.onclick=()=>wrap.remove();
 
-/* resize slider */
-const slider=document.createElement("input");
-slider.type="range";
-slider.min=50;
-slider.max=800;
-slider.value=150;
-slider.style.width="100%";
-slider.oninput=r=>{
-img.style.width=r.target.value+"px";
+const resize=document.createElement("div");
+resize.className="resize";
+
+box.append(img,close,resize);
+wrap.appendChild(box);
+document.body.appendChild(wrap);
+
+/* drag */
+let dragging=false,offsetX,offsetY;
+
+wrap.addEventListener("pointerdown",e=>{
+if(e.target===resize || e.target===close) return;
+dragging=true;
+offsetX=e.clientX-wrap.offsetLeft;
+offsetY=e.clientY-wrap.offsetTop;
+wrap.setPointerCapture(e.pointerId);
+});
+
+wrap.addEventListener("pointermove",e=>{
+if(!dragging) return;
+wrap.style.left=e.clientX-offsetX+"px";
+wrap.style.top=e.clientY-offsetY+"px";
+});
+
+wrap.addEventListener("pointerup",()=>{
+dragging=false;
+});
+
+/* resize */
+let resizing=false,startX,startW;
+
+resize.addEventListener("pointerdown",e=>{
+resizing=true;
+startX=e.clientX;
+startW=wrap.offsetWidth;
+e.stopPropagation();
+});
+
+window.addEventListener("pointermove",e=>{
+if(!resizing) return;
+wrap.style.width=startW+(e.clientX-startX)+"px";
+});
+
+window.addEventListener("pointerup",()=>resizing=false);
+
+});
 };
 
-/* add elements */
-box.append(img,close,slider);
-document.body.appendChild(box);
-
-/* DRAG SYSTEM */
-let offsetX,offsetY,isDown=false;
-
-box.addEventListener("pointerdown",e=>{
-if(e.target===slider || e.target===close) return;
-isDown=true;
-offsetX=e.clientX-box.offsetLeft;
-offsetY=e.clientY-box.offsetTop;
-box.setPointerCapture(e.pointerId);
-});
-
-box.addEventListener("pointermove",e=>{
-if(!isDown) return;
-box.style.left=(e.clientX-offsetX)+"px";
-box.style.top=(e.clientY-offsetY)+"px";
-});
-
-box.addEventListener("pointerup",()=>{
-isDown=false;
-});
-
-});
-};
-
-
+/* service worker */
 if("serviceWorker" in navigator){
 navigator.serviceWorker.register("sw.js");
 }
 </script>
+
 </body>
 </html>
