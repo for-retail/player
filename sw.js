@@ -1,10 +1,10 @@
-const CACHE = "god-player-v4";
+const CACHE_NAME = "godmode-player-v1";
 
 /* install */
 self.addEventListener("install", event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE).then(cache => {
+    caches.open(CACHE_NAME).then(cache => {
       return cache.addAll([
         "./",
         "./index.html",
@@ -20,7 +20,7 @@ self.addEventListener("activate", event => {
     caches.keys().then(keys => {
       return Promise.all(
         keys.map(key => {
-          if (key !== CACHE) {
+          if (key !== CACHE_NAME) {
             return caches.delete(key);
           }
         })
@@ -33,8 +33,8 @@ self.addEventListener("activate", event => {
 /* fetch */
 self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
+    caches.match(event.request).then(res => {
+      return res || fetch(event.request);
     })
   );
 });
