@@ -1,210 +1,168 @@
 <!DOCTYPE html>
-<html>
+<html lang="te">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>GOD MODE PLAYER</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>GOD MODE PLAYER</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { margin:0; background:#000; color:white; font-family:sans-serif; overflow:hidden; user-select:none; }
+        #box { position:relative; height:56.25vw; background:black; overflow:hidden; touch-action:none; }
+        video { width:100%; height:100%; object-fit:contain; pointer-events:none; }
 
-<style>
-body{margin:0;background:#000;color:white;font-family:sans-serif;overflow:hidden}
-#box{position:relative;height:56vw;background:black}
-video{width:100%;height:100%;object-fit:contain}
+        #hud { position:absolute; top:10px; left:50%; transform:translateX(-50%); background:#000a; padding:6px 14px; border-radius:20px; font-size:14px; z-index:5; }
+        #plus { position:absolute; bottom:15px; right:15px; width:55px; height:55px; border-radius:50%; background:#00ffcc; color:black; display:flex; align-items:center; justify-content:center; font-size:32px; cursor:pointer; z-index:10; font-weight:bold; }
+        #bar { height:6px; background:#222; cursor:pointer; position:relative; }
+        #prog { height:100%; width:0; background:#00ffcc; transition: width 0.1s linear; }
 
-#hud{
-position:absolute;top:10px;left:50%;
-transform:translateX(-50%);
-background:#000a;padding:6px 14px;
-border-radius:20px;font-size:14px;
-}
+        #thumbs { display:flex; gap:10px; overflow-x:auto; padding:10px; background:#050505; }
+        .thumb { min-width:140px; height:80px; border-radius:10px; overflow:hidden; border:2px solid transparent; cursor:pointer; flex-shrink:0; }
+        .thumb video { width:100%; height:100%; object-fit:cover; }
+        .active { border:2px solid #00ffcc; }
 
-#plus{
-position:absolute;bottom:15px;right:15px;
-width:55px;height:55px;border-radius:50%;
-background:#00ffcc;color:black;
-display:flex;align-items:center;justify-content:center;
-font-size:32px;cursor:pointer;
-z-index:10;
-}
-
-#bar{height:6px;background:#222;cursor:pointer}
-#prog{height:100%;width:0;background:#00ffcc}
-
-#thumbs{
-display:flex;gap:10px;overflow-x:auto;
-padding:10px;background:#050505;
-}
-.thumb{
-min-width:140px;height:80px;border-radius:10px;
-overflow:hidden;border:2px solid transparent;cursor:pointer;
-}
-.thumb video{width:100%;height:100%;object-fit:cover}
-.active{border:2px solid #00ffcc}
-
-/* overlay */
-.ovl{
-position:absolute;
-width:160px;
-touch-action:none;
-}
-.ovl img{
-width:100%;
-display:block;
-pointer-events:none;
-border-radius:12px;
-}
-
-.del{
-position:absolute;
-top:-10px;
-right:-10px;
-width:26px;height:26px;
-border-radius:50%;
-background:red;
-display:flex;
-align-items:center;
-justify-content:center;
-font-weight:bold;
-cursor:pointer;
-}
-
-.resize{
-position:absolute;
-right:0;bottom:0;
-width:22px;height:22px;
-background:#00ffcc;
-cursor:nwse-resize;
-}
-</style>
+        .ovl { position:absolute; width:160px; cursor:move; touch-action:none; z-index:8; }
+        .ovl img { width:100%; display:block; pointer-events:none; border-radius:12px; border:1px solid #ffffff33; }
+        .del { position:absolute; top:-10px; right:-10px; width:26px; height:26px; border-radius:50%; background:red; display:flex; align-items:center; justify-content:center; font-weight:bold; cursor:pointer; color:white; z-index:11; }
+        .resize { position:absolute; right:0; bottom:0; width:24px; height:24px; background:#00ffcc; cursor:nwse-resize; border-radius:4px; z-index:11; opacity:0.7; }
+        
+        button { background:#00ffcc; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold; }
+    </style>
 </head>
 <body>
 
 <div id="box">
-<video id="v"></video>
-<div id="hud">READY</div>
-<div id="plus">+</div>
+    <video id="v" playsinline></video>
+    <div id="hud">READY</div>
+    <div id="plus">+</div>
 </div>
 
 <div id="bar"><div id="prog"></div></div>
 
-<div style="padding:10px">
-<button onclick="pick.click()">LOAD VIDEOS</button>
-<input type="file" id="pick" multiple accept="video/*" hidden>
-<input type="file" id="imgpick" accept="image/*" multiple hidden>
+<div style="padding:15px; display:flex; gap:10px;">
+    <button onclick="document.getElementById('pick').click()">LOAD VIDEOS</button>
+    <input type="file" id="pick" multiple accept="video/*" hidden>
+    <input type="file" id="imgpick" accept="image/*" multiple hidden>
 </div>
 
 <div id="thumbs"></div>
 
 <script>
-const v=document.getElementById("v");
-const thumbs=document.getElementById("thumbs");
-const box=document.getElementById("box");
+const v = document.getElementById("v");
+const thumbs = document.getElementById("thumbs");
+const box = document.getElementById("box");
+const prog = document.getElementById("prog");
+const bar = document.getElementById("bar");
+const imgpick = document.getElementById("imgpick");
 
-let files=[],i=0;
+let files = [], i = 0;
 
-/* load videos */
-pick.onchange=e=>{
-files=[...e.target.files];
-thumbs.innerHTML="";
-files.forEach((f,index)=>{
-let url=URL.createObjectURL(f);
-let d=document.createElement("div");
-d.className="thumb";
-let vid=document.createElement("video");
-vid.src=url;vid.muted=true;vid.currentTime=1;
-d.appendChild(vid);
-d.onclick=()=>{i=index;play()};
-thumbs.appendChild(d);
-});
-if(files.length){i=0;play()}
-};
-
-function play(){
-v.src=URL.createObjectURL(files[i]);
-v.play();
-highlight();
+// Service Worker Registration for Offline
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js');
+    });
 }
 
-function highlight(){
-document.querySelectorAll(".thumb").forEach(t=>t.classList.remove("active"));
-if(thumbs.children[i]) thumbs.children[i].classList.add("active");
+// Load Videos
+document.getElementById('pick').onchange = e => {
+    files = [...e.target.files];
+    thumbs.innerHTML = "";
+    files.forEach((f, index) => {
+        let url = URL.createObjectURL(f);
+        let d = document.createElement("div");
+        d.className = "thumb";
+        let vid = document.createElement("video");
+        vid.src = url; vid.muted = true; vid.currentTime = 1;
+        d.appendChild(vid);
+        d.onclick = () => { i = index; play(); };
+        thumbs.appendChild(d);
+    });
+    if(files.length) { i = 0; play(); }
+};
+
+function play() {
+    v.src = URL.createObjectURL(files[i]);
+    v.play().catch(e => console.log("Auto-play blocked"));
+    highlight();
 }
 
-/* progress */
-v.ontimeupdate=()=>{
-prog.style.width=(v.currentTime/v.duration*100)+"%";
+function highlight() {
+    document.querySelectorAll(".thumb").forEach(t => t.classList.remove("active"));
+    if(thumbs.children[i]) thumbs.children[i].classList.add("active");
+}
+
+v.ontimeupdate = () => {
+    prog.style.width = (v.currentTime / v.duration * 100) + "%";
 };
 
-bar.onclick=e=>{
-v.currentTime=(e.offsetX/bar.offsetWidth)*v.duration;
+bar.onclick = e => {
+    v.currentTime = (e.offsetX / bar.offsetWidth) * v.duration;
 };
 
-v.onended=()=>{i=(i+1)%files.length;play()};
+v.onended = () => { i = (i + 1) % files.length; play(); };
 
-/* overlay button */
-plus.onclick=()=>imgpick.click();
+// Overlay Logic
+document.getElementById('plus').onclick = () => imgpick.click();
 
-/* overlay system */
-imgpick.onchange=e=>{
-[...e.target.files].forEach(file=>{
-
-const wrap=document.createElement("div");
-wrap.className="ovl";
-wrap.style.left="100px";
-wrap.style.top="100px";
-
-const img=document.createElement("img");
-img.src=URL.createObjectURL(file);
-
-const del=document.createElement("div");
-del.className="del";
-del.innerHTML="×";
-del.onclick=()=>wrap.remove();
-
-const res=document.createElement("div");
-res.className="resize";
-
-wrap.append(img,del,res);
-box.appendChild(wrap);
-
-/* drag */
-let dragging=false,offX=0,offY=0;
-
-wrap.addEventListener("pointerdown",e=>{
-if(e.target===res || e.target===del) return;
-dragging=true;
-offX=e.clientX-wrap.offsetLeft;
-offY=e.clientY-wrap.offsetTop;
-wrap.setPointerCapture(e.pointerId);
-});
-
-wrap.addEventListener("pointermove",e=>{
-if(!dragging) return;
-wrap.style.left=(e.clientX-offX)+"px";
-wrap.style.top=(e.clientY-offY)+"px";
-});
-
-wrap.addEventListener("pointerup",()=>dragging=false);
-wrap.addEventListener("pointercancel",()=>dragging=false);
-
-/* resize */
-let resizing=false,startX,startW;
-
-res.addEventListener("pointerdown",e=>{
-resizing=true;
-startX=e.clientX;
-startW=wrap.offsetWidth;
-e.stopPropagation();
-});
-
-window.addEventListener("pointermove",e=>{
-if(!resizing) return;
-wrap.style.width=startW+(e.clientX-startX)+"px";
-});
-
-window.addEventListener("pointerup",()=>resizing=false);
-
-});
+imgpick.onchange = e => {
+    [...e.target.files].forEach(file => {
+        createOverlay(URL.createObjectURL(file));
+    });
 };
+
+function createOverlay(src) {
+    const wrap = document.createElement("div");
+    wrap.className = "ovl";
+    wrap.style.left = "50px";
+    wrap.style.top = "50px";
+
+    const img = document.createElement("img");
+    img.src = src;
+
+    const del = document.createElement("div");
+    del.className = "del";
+    del.innerHTML = "×";
+    del.onclick = (e) => { e.stopPropagation(); wrap.remove(); };
+
+    const res = document.createElement("div");
+    res.className = "resize";
+
+    wrap.append(img, del, res);
+    box.appendChild(wrap);
+
+    let dragging = false, resizing = false;
+    let offX, offY, startX, startW;
+
+    wrap.onpointerdown = e => {
+        if (e.target === res) {
+            resizing = true;
+            startX = e.clientX;
+            startW = wrap.offsetWidth;
+        } else if (e.target !== del) {
+            dragging = true;
+            offX = e.clientX - wrap.offsetLeft;
+            offY = e.clientY - wrap.offsetTop;
+        }
+        wrap.setPointerCapture(e.pointerId);
+    };
+
+    wrap.onpointermove = e => {
+        if (dragging) {
+            wrap.style.left = (e.clientX - offX) + "px";
+            wrap.style.top = (e.clientY - offY) + "px";
+        }
+        if (resizing) {
+            let nw = startW + (e.clientX - startX);
+            if(nw > 50) wrap.style.width = nw + "px";
+        }
+    };
+
+    wrap.onpointerup = e => {
+        dragging = false;
+        resizing = false;
+        wrap.releasePointerCapture(e.pointerId);
+    };
+}
 </script>
 </body>
 </html>
