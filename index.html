@@ -3,24 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>GAA Player</title>
-<link rel="manifest" href="manifest.json">
+<title>Player</title>
 
 <style>
 body{
 margin:0;
 background:#000;
-color:white;
 font-family:sans-serif;
-overflow:hidden;
+color:white;
 }
 
 /* video */
 #v-box{
-width:100vw;
-height:56.25vw;
+width:100%;
+height:55vw;
 background:#111;
-border-bottom:2px solid #00ffcc;
 }
 video{
 width:100%;
@@ -30,212 +27,116 @@ object-fit:contain;
 
 /* controls */
 .controls{
-padding:20px;
+padding:15px;
 background:#151515;
-border-radius:20px 20px 0 0;
-}
-.btn-row{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-margin:15px 0;
 }
 button{
+width:100%;
 padding:15px;
 border:none;
 border-radius:10px;
-font-weight:bold;
-}
-.btn{background:#00ffcc;color:black;}
-.next{background:#ffcc00;width:100%;}
-label{color:#00ffcc;font-weight:bold;}
-input[type=range]{width:100%;}
-
-/* overlay */
-.ovl{
-position:fixed;
-left:120px;
-top:120px;
-width:180px;
-touch-action:none;
-}
-
-.box{
-position:relative;
-border:2px solid #00ffcc;
-border-radius:14px;
-overflow:hidden;
-background:#00000055;
-}
-
-.box img{
-width:100%;
-display:block;
-pointer-events:none;
-}
-
-.close{
-position:absolute;
-top:-12px;
-right:-12px;
-background:red;
-width:28px;
-height:28px;
-border-radius:50%;
-color:white;
-font-weight:bold;
-border:2px solid white;
-display:flex;
-align-items:center;
-justify-content:center;
-cursor:pointer;
-}
-
-.resize{
-position:absolute;
-bottom:0;
-right:0;
-width:22px;
-height:22px;
 background:#00ffcc;
-cursor:nwse-resize;
+font-weight:bold;
+}
+
+/* thumbnails */
+#thumbs{
+display:flex;
+gap:10px;
+overflow-x:auto;
+padding:10px;
+background:#000;
+}
+
+.thumb{
+min-width:130px;
+height:75px;
+border:2px solid #00ffcc;
+border-radius:8px;
+overflow:hidden;
+cursor:pointer;
+position:relative;
+}
+
+.thumb video{
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+.active{
+outline:3px solid yellow;
 }
 </style>
 </head>
 <body>
 
 <div id="v-box">
-<video id="player" controls playsinline></video>
+<video id="player" controls></video>
 </div>
 
 <div class="controls">
-<label>Brightness</label>
-<input type="range" id="br" min="1" max="5" step="0.1" value="1">
-
-<div class="btn-row">
-<button class="btn" onclick="videoInput.click()">LOAD VIDEOS</button>
-<button class="btn" onclick="imgInput.click()">ADD IMAGE</button>
+<button onclick="fileInput.click()">SELECT VIDEOS</button>
+<input type="file" id="fileInput" accept="video/*" multiple hidden>
 </div>
 
-<input type="file" id="videoInput" accept="video/*" multiple hidden>
-<input type="file" id="imgInput" accept="image/*" multiple hidden>
-
-<button class="next" id="nextBtn">NEXT VIDEO</button>
-</div>
+<div id="thumbs"></div>
 
 <script>
-const p=document.getElementById("player");
-const videoInput=document.getElementById("videoInput");
-const imgInput=document.getElementById("imgInput");
+const player=document.getElementById("player");
+const input=document.getElementById("fileInput");
+const thumbs=document.getElementById("thumbs");
 
 let list=[];
 let index=0;
 
-/* video load */
-videoInput.onchange=e=>{
+/* load videos */
+input.onchange=e=>{
 list=[...e.target.files];
+thumbs.innerHTML="";
+
+list.forEach((file,i)=>{
+const url=URL.createObjectURL(file);
+
+const div=document.createElement("div");
+div.className="thumb";
+
+const v=document.createElement("video");
+v.src=url;
+v.muted=true;
+v.currentTime=1;
+
+div.appendChild(v);
+
+/* click play */
+div.onclick=()=>{
+index=i;
+playVideo();
+highlight();
+};
+
+thumbs.appendChild(div);
+});
+
 if(list.length){
 index=0;
-play(index);
+playVideo();
+highlight();
 }
 };
 
-function play(i){
-if(p.src) URL.revokeObjectURL(p.src);
-p.src=URL.createObjectURL(list[i]);
-p.play();
+/* play */
+function playVideo(){
+if(player.src) URL.revokeObjectURL(player.src);
+player.src=URL.createObjectURL(list[index]);
+player.play();
 }
 
-/* next */
-nextBtn.onclick=()=>{
-if(list.length){
-index=(index+1)%list.length;
-play(index);
-}
-};
-
-/* auto next */
-p.onended=()=>{
-if(list.length){
-index=(index+1)%list.length;
-play(index);
-}
-};
-
-/* brightness */
-br.oninput=e=>{
-p.style.filter=`brightness(${e.target.value})`;
-};
-
-/* overlays */
-imgInput.onchange=e=>{
-[...e.target.files].forEach(file=>{
-
-const wrap=document.createElement("div");
-wrap.className="ovl";
-
-const box=document.createElement("div");
-box.className="box";
-
-const img=document.createElement("img");
-img.src=URL.createObjectURL(file);
-
-const close=document.createElement("div");
-close.className="close";
-close.innerHTML="×";
-close.onclick=()=>wrap.remove();
-
-const resize=document.createElement("div");
-resize.className="resize";
-
-box.append(img,close,resize);
-wrap.appendChild(box);
-document.body.appendChild(wrap);
-
-/* drag */
-let dragging=false,offsetX,offsetY;
-
-wrap.addEventListener("pointerdown",e=>{
-if(e.target===resize || e.target===close) return;
-dragging=true;
-offsetX=e.clientX-wrap.offsetLeft;
-offsetY=e.clientY-wrap.offsetTop;
-wrap.setPointerCapture(e.pointerId);
-});
-
-wrap.addEventListener("pointermove",e=>{
-if(!dragging) return;
-wrap.style.left=e.clientX-offsetX+"px";
-wrap.style.top=e.clientY-offsetY+"px";
-});
-
-wrap.addEventListener("pointerup",()=>{
-dragging=false;
-});
-
-/* resize */
-let resizing=false,startX,startW;
-
-resize.addEventListener("pointerdown",e=>{
-resizing=true;
-startX=e.clientX;
-startW=wrap.offsetWidth;
-e.stopPropagation();
-});
-
-window.addEventListener("pointermove",e=>{
-if(!resizing) return;
-wrap.style.width=startW+(e.clientX-startX)+"px";
-});
-
-window.addEventListener("pointerup",()=>resizing=false);
-
-});
-};
-
-/* service worker */
-if("serviceWorker" in navigator){
-navigator.serviceWorker.register("sw.js");
+/* highlight */
+function highlight(){
+document.querySelectorAll(".thumb").forEach(t=>t.classList.remove("active"));
+if(thumbs.children[index])
+thumbs.children[index].classList.add("active");
 }
 </script>
 
